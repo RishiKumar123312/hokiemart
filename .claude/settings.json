@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -I{} sh -c 'echo {}; wc -l {}')",
+      "Bash(grep -iE \"^badge-check|^sofa\\\\.mjs$\")",
+      "Bash(grep -iE \"^lock\\\\.mjs$|^chevron-right\\\\.mjs$|^chevron-left\\\\.mjs$|^radio\\\\.mjs$|^circle-check|^upload\\\\.mjs$|^image\\\\.mjs$|^map-pin\\\\.mjs$|^clock\\\\.mjs$\")",
+      "Bash(npx tsc *)"
+    ]
+  }
+}
