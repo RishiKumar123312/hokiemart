@@ -13,10 +13,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase";
 import {
   buildSeedListings,
   seedGroups,
@@ -28,6 +31,25 @@ import {
   type Listing,
   type User,
 } from "@/lib/mock-data";
+
+// Off = no fake seed data, not "real data" -- listings/groups queries are a
+// separate future migration. currentUser is the one exception: it comes from
+// the real Supabase session so the auth flow (proxy.ts + /login) can be
+// tested without the hardcoded mock user masking who's actually signed in.
+const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+
+function toStoreUser(user: SupabaseAuthUser | null): User | null {
+  if (!user) return null;
+  const email = user.email ?? "";
+  const namePart = email.split("@")[0] || user.id;
+  return {
+    id: user.id,
+    displayName: email || user.id,
+    initials: namePart.slice(0, 2).toUpperCase() || "?",
+    verified: false,
+    salesCount: 0,
+  };
+}
 
 type NewListingDraft = {
   title: string;
@@ -51,7 +73,7 @@ type RedeemResult = { success: true; groupId: string } | { success: false; error
 type StoreState = {
   listings: Listing[];
   groups: Group[];
-  currentUser: User;
+  currentUser: User | null;
   hasLoadedOnce: boolean;
   markLoaded: () => void;
 
@@ -97,16 +119,41 @@ function makeInviteCode(name: string): string {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [listings, setListings] = useState<Listing[]>(() => buildSeedListings());
-  const [groups, setGroups] = useState<Group[]>(() => seedGroups);
+  const [listings, setListings] = useState<Listing[]>(() =>
+    USE_MOCK_DATA ? buildSeedListings() : []
+  );
+  const [groups, setGroups] = useState<Group[]>(() => (USE_MOCK_DATA ? seedGroups : []));
   const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
-  const [joinedIds, setJoinedIds] = useState<Set<string>>(
-    () => new Set(seedGroups.filter((g) => g.isMember).map((g) => g.id))
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(() =>
+    USE_MOCK_DATA ? new Set(seedGroups.filter((g) => g.isMember).map((g) => g.id)) : new Set()
   );
   const [requestedIds, setRequestedIds] = useState<Set<string>>(() => new Set());
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  const currentUser = seedUsers.find((u) => u.id === CURRENT_USER_ID)!;
+  const [currentUser, setCurrentUser] = useState<User | null>(() =>
+    USE_MOCK_DATA ? seedUsers.find((u) => u.id === CURRENT_USER_ID)! : null
+  );
+
+  useEffect(() => {
+    if (USE_MOCK_DATA) return;
+    const supabase = createClient();
+    let active = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (active) setCurrentUser(toStoreUser(data.user));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(toStoreUser(session?.user ?? null));
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const markLoaded = useCallback(() => setHasLoadedOnce(true), []);
 
@@ -130,7 +177,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [listings]
   );
 
-  const getSeller = useCallback((id: string) => seedUsers.find((u) => u.id === id), []);
+  const getSeller = useCallback(
+    (id: string): User | undefined => {
+      if (!USE_MOCK_DATA) return currentUser && currentUser.id === id ? currentUser : undefined;
+      return seedUsers.find((u) => u.id === id);
+    },
+    [currentUser]
+  );
 
   const getGroup = useCallback((id: string) => groups.find((g) => g.id === id), [groups]);
 
@@ -156,23 +209,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [listings]
   );
 
-  const addListing = useCallback((draft: NewListingDraft): Listing => {
-    const listing: Listing = {
-      id: makeId("l"),
-      title: draft.title,
-      price: draft.price,
-      category: draft.category,
-      description: draft.description,
-      imageUrl: null,
-      location: draft.location || "Blacksburg",
-      createdAt: new Date().toISOString(),
-      sellerId: CURRENT_USER_ID,
-      groupId: draft.groupId,
-      handoff: draft.handoff,
-    };
-    setListings((prev) => [listing, ...prev]);
-    return listing;
-  }, []);
+  const addListing = useCallback(
+    (draft: NewListingDraft): Listing => {
+      const listing: Listing = {
+        id: makeId("l"),
+        title: draft.title,
+        price: draft.price,
+        category: draft.category,
+        description: draft.description,
+        imageUrl: null,
+        location: draft.location || "Blacksburg",
+        createdAt: new Date().toISOString(),
+        sellerId: currentUser?.id ?? CURRENT_USER_ID,
+        groupId: draft.groupId,
+        handoff: draft.handoff,
+      };
+      setListings((prev) => [listing, ...prev]);
+      return listing;
+    },
+    [currentUser]
+  );
 
   const toggleSave = useCallback((listingId: string) => {
     setSavedIds((prev) => {
