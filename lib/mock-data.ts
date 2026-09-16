@@ -12,6 +12,11 @@ export const CATEGORIES: Category[] = [
   "Other",
 ];
 
+// How a listing can change hands: pickup-only, delivery (seller can bring
+// it to you), or both. A single boolean can't represent "both," so this is
+// a real tri-state rather than a flag.
+export type Handoff = "Pickup only" | "Delivery" | "Both";
+
 export type Listing = {
   id: string;
   title: string;
@@ -23,7 +28,7 @@ export type Listing = {
   createdAt: string; // ISO string, derived from minutesAgo at seed time
   sellerId: string;
   groupId: string | null; // null = public feed
-  pickupOnly: boolean;
+  handoff: Handoff;
 };
 
 export type JoinPolicy = "open" | "approval" | "invite";
@@ -146,7 +151,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 25,
     sellerId: "u2",
     groupId: null,
-    pickupOnly: false,
+    handoff: "Delivery",
   },
   {
     id: "l2",
@@ -160,7 +165,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 95,
     sellerId: "u4",
     groupId: null,
-    pickupOnly: true,
+    handoff: "Pickup only",
   },
   {
     id: "l3",
@@ -174,7 +179,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 180,
     sellerId: "u3",
     groupId: null,
-    pickupOnly: false,
+    handoff: "Both",
   },
   {
     id: "l4",
@@ -187,7 +192,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 240,
     sellerId: "u1",
     groupId: null,
-    pickupOnly: false,
+    handoff: "Both",
   },
   {
     id: "l5",
@@ -200,7 +205,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 320,
     sellerId: "u5",
     groupId: null,
-    pickupOnly: true,
+    handoff: "Pickup only",
   },
   {
     id: "l6",
@@ -213,7 +218,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 400,
     sellerId: "u2",
     groupId: null,
-    pickupOnly: false,
+    handoff: "Delivery",
   },
   {
     id: "l7",
@@ -226,7 +231,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 500,
     sellerId: "u4",
     groupId: null,
-    pickupOnly: false,
+    handoff: "Delivery",
   },
   {
     id: "l8",
@@ -239,7 +244,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 610,
     sellerId: "u3",
     groupId: null,
-    pickupOnly: true,
+    handoff: "Pickup only",
   },
   // Group-scoped listings
   {
@@ -253,7 +258,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 60,
     sellerId: "u3",
     groupId: "g1",
-    pickupOnly: false,
+    handoff: "Both",
   },
   {
     id: "l10",
@@ -266,7 +271,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 140,
     sellerId: "u1",
     groupId: "g1",
-    pickupOnly: false,
+    handoff: "Delivery",
   },
   {
     id: "l11",
@@ -279,7 +284,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 45,
     sellerId: "u4",
     groupId: "g2",
-    pickupOnly: true,
+    handoff: "Pickup only",
   },
   {
     id: "l12",
@@ -292,7 +297,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 300,
     sellerId: "u2",
     groupId: "g2",
-    pickupOnly: true,
+    handoff: "Pickup only",
   },
   {
     id: "l13",
@@ -305,7 +310,7 @@ export const seedListingsRaw: SeedListing[] = [
     minutesAgo: 200,
     sellerId: "u5",
     groupId: "g5",
-    pickupOnly: false,
+    handoff: "Delivery",
   },
 ];
 

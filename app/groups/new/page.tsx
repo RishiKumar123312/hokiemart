@@ -13,18 +13,18 @@ import type { Group } from "@/lib/mock-data";
 const POLICIES: { value: Group["joinPolicy"]; label: string; hint: string }[] = [
   {
     value: "open",
-    label: "open to @vt.edu",
-    hint: "any verified student joins instantly",
+    label: "Open to @vt.edu",
+    hint: "Any verified student joins instantly",
   },
   {
     value: "approval",
-    label: "approval required",
-    hint: "you approve each request",
+    label: "Approval required",
+    hint: "You approve each request",
   },
   {
     value: "invite",
-    label: "invite code",
-    hint: "members join with a code you share",
+    label: "Invite code",
+    hint: "Members join with a code you share",
   },
 ];
 
@@ -39,7 +39,7 @@ export default function CreateGroupPage() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
-      setNameError("give your group a name");
+      setNameError("Give your group a name");
       return;
     }
     const group = createGroup({
@@ -53,14 +53,14 @@ export default function CreateGroupPage() {
 
   return (
     <div>
-      <BackHeader title="create a group" backHref="/groups" />
+      <BackHeader title="Create a group" backHref="/groups" />
 
       <form onSubmit={handleSubmit} className="space-y-5 px-4 py-5">
         <div className="flex flex-col items-center gap-2">
           <div className="flex size-20 items-center justify-center rounded-xl border border-dashed border-hairline text-stone">
             <Camera className="size-6" />
           </div>
-          <p className="text-xs text-stone">group icon (optional)</p>
+          <p className="text-xs text-stone">Group icon (optional)</p>
         </div>
 
         <Field label="Group name" htmlFor="group-name" error={nameError}>
@@ -71,7 +71,7 @@ export default function CreateGroupPage() {
               setName(e.target.value);
               if (nameError) setNameError("");
             }}
-            placeholder="e.g. ACM at VT"
+            placeholder="E.g. ACM at VT"
             aria-invalid={nameError ? true : undefined}
           />
         </Field>
@@ -81,7 +81,7 @@ export default function CreateGroupPage() {
             id="group-purpose"
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
-            placeholder="what's this group for?"
+            placeholder="What's this group for?"
           />
         </Field>
 
@@ -129,7 +129,7 @@ export default function CreateGroupPage() {
           type="submit"
           className="h-12 w-full rounded-lg bg-brand text-sm font-medium text-white"
         >
-          create group
+          Create group
         </button>
       </form>
     </div>

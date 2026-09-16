@@ -25,7 +25,7 @@ export function JoinButton({ group, className }: { group: Group; className?: str
           className
         )}
       >
-        joined
+        Joined
       </button>
     );
   }
@@ -40,7 +40,7 @@ export function JoinButton({ group, className }: { group: Group; className?: str
           className
         )}
       >
-        enter code
+        Enter code
       </button>
     );
   }
@@ -56,7 +56,7 @@ export function JoinButton({ group, className }: { group: Group; className?: str
             className
           )}
         >
-          requested
+          Requested
         </button>
       );
     }
@@ -69,7 +69,7 @@ export function JoinButton({ group, className }: { group: Group; className?: str
           className
         )}
       >
-        join
+        Join
       </button>
     );
   }
@@ -84,7 +84,7 @@ export function JoinButton({ group, className }: { group: Group; className?: str
         className
       )}
     >
-      join
+      Join
     </button>
   );
 }

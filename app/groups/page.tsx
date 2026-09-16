@@ -42,7 +42,7 @@ export default function GroupsPage() {
   return (
     <div className="pb-6">
       <AppHeader
-        title="groups"
+        title="Groups"
         right={
           <Link href="/groups/new">
             <IconButton aria-label="Create a group">
@@ -60,15 +60,15 @@ export default function GroupsPage() {
           <Plus className="size-5" />
         </div>
         <div>
-          <p className="font-medium text-foreground">create a group</p>
-          <p className="text-sm text-stone">for your org, dorm, or club</p>
+          <p className="font-medium text-foreground">Create a group</p>
+          <p className="text-sm text-stone">For your org, dorm, or club</p>
         </div>
       </Link>
 
       <section>
-        <h2 className="px-4 pb-1 pt-4 text-sm font-medium text-stone">your groups</h2>
+        <h2 className="px-4 pb-1 pt-4 text-sm font-medium text-stone">Your groups</h2>
         {myGroups.length === 0 ? (
-          <p className="px-4 pb-2 text-sm text-stone">you haven&apos;t joined any groups yet.</p>
+          <p className="px-4 pb-2 text-sm text-stone">You haven&apos;t joined any groups yet.</p>
         ) : (
           <div className="divide-y divide-hairline">
             {myGroups.map((group) => (
@@ -79,9 +79,9 @@ export default function GroupsPage() {
       </section>
 
       <section>
-        <h2 className="px-4 pb-1 pt-5 text-sm font-medium text-stone">discover</h2>
+        <h2 className="px-4 pb-1 pt-5 text-sm font-medium text-stone">Discover</h2>
         {discoverGroups.length === 0 ? (
-          <p className="px-4 pb-2 text-sm text-stone">no more groups to discover right now.</p>
+          <p className="px-4 pb-2 text-sm text-stone">No more groups to discover right now.</p>
         ) : (
           <div className="divide-y divide-hairline">
             {discoverGroups.map((group) => (
@@ -94,7 +94,7 @@ export default function GroupsPage() {
       <section id="invite-code" className="mt-6 space-y-2 px-4">
         <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Users className="size-4 text-stone" />
-          have an invite code?
+          Have an invite code?
         </div>
         <form onSubmit={handleRedeem} className="flex gap-2">
           <Input
@@ -104,7 +104,7 @@ export default function GroupsPage() {
               setCode(e.target.value);
               if (error) setError("");
             }}
-            placeholder="enter code"
+            placeholder="Enter code"
             aria-invalid={error ? true : undefined}
             className="flex-1"
           />
@@ -112,7 +112,7 @@ export default function GroupsPage() {
             type="submit"
             className="h-11 shrink-0 rounded-lg bg-brand px-4 text-sm font-medium text-white"
           >
-            join
+            Join
           </button>
         </form>
         {error && <p className="text-sm text-destructive">{error}</p>}

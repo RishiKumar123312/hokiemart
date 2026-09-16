@@ -11,7 +11,7 @@ export default function SavedPage() {
 
   return (
     <div>
-      <AppHeader title="saved" />
+      <AppHeader title="Saved" />
       <ListingGrid
         listings={saved}
         emptyIcon={<Heart className="size-6" />}

@@ -13,6 +13,13 @@ import { EmptyState } from "@/components/empty-state";
 import { formatPrice, timeAgo } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import type { Handoff } from "@/lib/mock-data";
+
+const HANDOFF_LABEL: Record<Handoff, string> = {
+  "Pickup only": "Pickup only",
+  Delivery: "Delivery available",
+  Both: "Pickup or delivery",
+};
 
 export function ListingDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -75,13 +82,11 @@ export function ListingDetail({ id }: { id: string }) {
 
         <div className="flex flex-wrap gap-2">
           <span className="rounded-lg bg-brand-tint px-3 py-1 text-sm text-brand-ink">
-            {listing.category.toLowerCase()}
+            {listing.category}
           </span>
-          {listing.pickupOnly && (
-            <span className="rounded-lg bg-brand-tint px-3 py-1 text-sm text-brand-ink">
-              pickup only
-            </span>
-          )}
+          <span className="rounded-lg bg-brand-tint px-3 py-1 text-sm text-brand-ink">
+            {HANDOFF_LABEL[listing.handoff]}
+          </span>
         </div>
 
         <p className="text-sm leading-relaxed text-foreground">{listing.description}</p>
@@ -118,7 +123,7 @@ export function ListingDetail({ id }: { id: string }) {
               : "bg-brand text-white hover:bg-brand/90"
           )}
         >
-          {messaged ? "message sent · check your inbox" : "message seller"}
+          {messaged ? "Message sent · check your inbox" : "Message seller"}
         </button>
         <IconButton
           aria-label={saved ? "Remove from saved" : "Save listing"}

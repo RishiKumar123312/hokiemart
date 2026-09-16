@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CATEGORIES, type Category } from "@/lib/mock-data";
+import { CATEGORIES, type Category, type Handoff } from "@/lib/mock-data";
+import { PillRow } from "@/components/feed/filter-sheet";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
   const [postTo, setPostTo] = useState<string>(validInitialGroup);
   const [description, setDescription] = useState("");
   const [meetupSpot, setMeetupSpot] = useState("");
+  const [handoff, setHandoff] = useState<Handoff>("Both");
 
   const [titleError, setTitleError] = useState("");
   const [priceError, setPriceError] = useState("");
@@ -42,12 +44,12 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
 
     let hasError = false;
     if (!title.trim()) {
-      setTitleError("give your listing a title");
+      setTitleError("Give your listing a title");
       hasError = true;
     }
     const parsedPrice = Number(price);
     if (!price.trim() || Number.isNaN(parsedPrice) || parsedPrice < 0) {
-      setPriceError("enter a valid price");
+      setPriceError("Enter a valid price");
       hasError = true;
     }
     if (hasError) return;
@@ -61,7 +63,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
       description: description.trim() || "No description added.",
       location: meetupSpot.trim(),
       groupId,
-      pickupOnly: false,
+      handoff,
     });
 
     router.push(groupId ? `/groups/${groupId}` : "/");
@@ -69,12 +71,12 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
 
   return (
     <div className="pb-10">
-      <AppHeader title="new listing" />
+      <AppHeader title="New listing" />
 
       <form onSubmit={handleSubmit} className="space-y-5 px-4 py-5">
         <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-hairline text-stone">
           <Camera className="size-6" />
-          <span className="text-xs">add photos</span>
+          <span className="text-xs">Add photos</span>
         </div>
 
         <Field label="Title" htmlFor="listing-title" error={titleError}>
@@ -85,7 +87,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
               setTitle(e.target.value);
               if (titleError) setTitleError("");
             }}
-            placeholder="e.g. IKEA futon, grey"
+            placeholder="E.g. IKEA futon, grey"
             aria-invalid={titleError ? true : undefined}
           />
         </Field>
@@ -118,11 +120,19 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
             <SelectContent>
               {CATEGORIES.map((c) => (
                 <SelectItem key={c} value={c}>
-                  {c.toLowerCase()}
+                  {c}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+        </Field>
+
+        <Field label="Pickup or delivery">
+          <PillRow
+            options={["Both", "Pickup only", "Delivery"]}
+            active={handoff}
+            onChange={(value) => setHandoff(value as Handoff)}
+          />
         </Field>
 
         <Field label="Post to" htmlFor="listing-post-to">
@@ -131,7 +141,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={EVERYONE}>everyone at VT</SelectItem>
+              <SelectItem value={EVERYONE}>Everyone at VT</SelectItem>
               {myGroups.map((g) => (
                 <SelectItem key={g.id} value={g.id}>
                   {g.name} (members only)
@@ -143,7 +153,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
 
         <details className="group space-y-4 [&_summary::-webkit-details-marker]:hidden">
           <summary className="cursor-pointer text-sm font-medium text-brand outline-none">
-            add description and meetup spot
+            Add description and meetup spot
           </summary>
 
           <div className="space-y-4 pt-4">
@@ -152,7 +162,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
                 id="listing-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="condition, details, anything a buyer should know"
+                placeholder="Condition, details, anything a buyer should know"
                 rows={4}
                 className={cn(
                   "w-full resize-none rounded-lg border border-input bg-transparent px-3.5 py-2.5 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -165,7 +175,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
                 id="listing-location"
                 value={meetupSpot}
                 onChange={(e) => setMeetupSpot(e.target.value)}
-                placeholder="e.g. Squires, Foxridge"
+                placeholder="E.g. Squires, Foxridge"
               />
             </Field>
           </div>
@@ -175,7 +185,7 @@ export function SellForm({ initialGroupId }: { initialGroupId: string | null }) 
           type="submit"
           className="h-12 w-full rounded-lg bg-brand text-sm font-medium text-white"
         >
-          post listing
+          Post listing
         </button>
       </form>
     </div>

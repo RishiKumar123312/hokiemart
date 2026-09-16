@@ -7,9 +7,9 @@ import { VerifiedLine } from "@/components/user/verified-line";
 import { useStore } from "@/lib/store";
 
 const SETTINGS_ROWS = [
-  { icon: Star, label: "reviews" },
-  { icon: ShieldCheck, label: "verification status" },
-  { icon: Settings, label: "settings" },
+  { icon: Star, label: "Reviews" },
+  { icon: ShieldCheck, label: "Verification status" },
+  { icon: Settings, label: "Settings" },
 ];
 
 export default function ProfilePage() {
@@ -20,7 +20,7 @@ export default function ProfilePage() {
 
   return (
     <div className="pb-6">
-      <AppHeader title="you" />
+      <AppHeader title="You" />
 
       <div className="flex flex-col items-center gap-2 px-4 pb-5 pt-6 text-center">
         <Avatar initials={currentUser.initials} size="lg" />
@@ -30,9 +30,9 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-3 gap-2 px-4">
         {[
-          { label: "listings", value: listingCount },
-          { label: "groups", value: groupCount },
-          { label: "saved", value: savedCount },
+          { label: "Listings", value: listingCount },
+          { label: "Groups", value: groupCount },
+          { label: "Saved", value: savedCount },
         ].map((stat) => (
           <div
             key={stat.label}

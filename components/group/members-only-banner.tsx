@@ -9,7 +9,7 @@ export function MembersOnlyBanner({ groupId, groupName }: { groupId: string; gro
     >
       <span className="flex items-center gap-1.5">
         <Lock className="size-3.5" />
-        members only · {groupName}
+        Members only · {groupName}
       </span>
       <ChevronRight className="size-4 shrink-0" />
     </Link>

@@ -73,7 +73,7 @@ export function GroupFeed({ id }: { id: string }) {
           className="mx-4 mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-dashed border-hairline text-sm font-medium text-stone"
         >
           <PackagePlus className="size-4" />
-          post to this group
+          Post to this group
         </Link>
       )}
 

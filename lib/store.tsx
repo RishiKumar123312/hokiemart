@@ -24,6 +24,7 @@ import {
   CURRENT_USER_ID,
   type Category,
   type Group,
+  type Handoff,
   type Listing,
   type User,
 } from "@/lib/mock-data";
@@ -35,7 +36,7 @@ type NewListingDraft = {
   description: string;
   location: string;
   groupId: string | null;
-  pickupOnly: boolean;
+  handoff: Handoff;
 };
 
 type NewGroupDraft = {
@@ -167,7 +168,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
       sellerId: CURRENT_USER_ID,
       groupId: draft.groupId,
-      pickupOnly: draft.pickupOnly,
+      handoff: draft.handoff,
     };
     setListings((prev) => [listing, ...prev]);
     return listing;

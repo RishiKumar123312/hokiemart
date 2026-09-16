@@ -4,9 +4,9 @@ import { GroupIconTile } from "./group-icon-tile";
 import { JoinButton } from "./join-button";
 
 export const POLICY_LABEL: Record<Group["joinPolicy"], string> = {
-  open: "open to @vt.edu",
-  approval: "approval required",
-  invite: "invite only",
+  open: "Open to @vt.edu",
+  approval: "Approval required",
+  invite: "Invite only",
 };
 
 export function GroupRow({ group }: { group: Group }) {

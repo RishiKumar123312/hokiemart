@@ -36,7 +36,7 @@ function CopyRow({ value }: { value: string }) {
         )}
       >
         <Copy className="size-3.5" />
-        {copied ? "copied" : "copy"}
+        {copied ? "Copied" : "Copy"}
       </button>
     </div>
   );
@@ -54,7 +54,7 @@ export function InviteScreen({ id }: { id: string }) {
   if (!group) {
     return (
       <div>
-        <AppHeader title="invite others" />
+        <AppHeader title="Invite others" />
         <EmptyState icon={<X className="size-6" />} title="This group isn't around anymore" />
       </div>
     );
@@ -65,7 +65,7 @@ export function InviteScreen({ id }: { id: string }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <AppHeader
-        title="invite others"
+        title="Invite others"
         right={
           <IconButton aria-label="Close" onClick={() => router.push(`/groups/${group.id}`)}>
             <X className="size-[17px]" />
@@ -108,7 +108,7 @@ export function InviteScreen({ id }: { id: string }) {
           onClick={() => router.push(`/groups/${group.id}`)}
           className="h-12 w-full rounded-lg bg-brand text-sm font-medium text-white"
         >
-          done
+          Done
         </button>
       </div>
     </div>
