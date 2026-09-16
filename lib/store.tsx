@@ -74,6 +74,11 @@ type StoreState = {
   listings: Listing[];
   groups: Group[];
   currentUser: User | null;
+  // True only while the real Supabase session is still resolving (mock mode
+  // never sets this -- currentUser is available synchronously). Lets screens
+  // tell "not signed in yet" apart from "still loading" instead of treating
+  // a null currentUser as a permanent logged-out state.
+  isAuthLoading: boolean;
   hasLoadedOnce: boolean;
   markLoaded: () => void;
 
@@ -133,6 +138,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(() =>
     USE_MOCK_DATA ? seedUsers.find((u) => u.id === CURRENT_USER_ID)! : null
   );
+  const [isAuthLoading, setIsAuthLoading] = useState(!USE_MOCK_DATA);
 
   useEffect(() => {
     if (USE_MOCK_DATA) return;
@@ -140,13 +146,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     supabase.auth.getUser().then(({ data }) => {
-      if (active) setCurrentUser(toStoreUser(data.user));
+      if (!active) return;
+      setCurrentUser(toStoreUser(data.user));
+      setIsAuthLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setCurrentUser(toStoreUser(session?.user ?? null));
+      setIsAuthLoading(false);
     });
 
     return () => {
@@ -323,6 +332,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       listings,
       groups,
       currentUser,
+      isAuthLoading,
       hasLoadedOnce,
       markLoaded,
       getPublicListings,
@@ -351,6 +361,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       listings,
       groups,
       currentUser,
+      isAuthLoading,
       hasLoadedOnce,
       markLoaded,
       getPublicListings,

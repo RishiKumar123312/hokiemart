@@ -1,9 +1,12 @@
 "use client";
 
-import { ChevronRight, Star, ShieldCheck, Settings } from "lucide-react";
+import { ChevronRight, Star, ShieldCheck, Settings, UserRound } from "lucide-react";
+import Link from "next/link";
 import { AppHeader } from "@/components/nav/app-header";
 import { Avatar } from "@/components/user/avatar";
 import { VerifiedLine } from "@/components/user/verified-line";
+import { EmptyState } from "@/components/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useStore } from "@/lib/store";
 
 const SETTINGS_ROWS = [
@@ -13,7 +16,45 @@ const SETTINGS_ROWS = [
 ];
 
 export default function ProfilePage() {
-  const { currentUser, listings, getMyGroups, savedCount } = useStore();
+  const { currentUser, isAuthLoading, listings, getMyGroups, savedCount } = useStore();
+
+  // isAuthLoading only ever true in real (non-mock) mode, for the brief
+  // window before supabase.auth.getUser() resolves.
+  if (isAuthLoading) {
+    return (
+      <div className="pb-6">
+        <AppHeader title="You" />
+        <div className="flex flex-col items-center gap-2 px-4 pb-5 pt-6">
+          <Skeleton className="size-16 rounded-full" />
+          <Skeleton className="h-4 w-32 rounded-md" />
+        </div>
+      </div>
+    );
+  }
+
+  // proxy.ts already keeps unauthenticated requests off this route, so this
+  // is a defensive fallback (session expired mid-visit, etc.) rather than
+  // the expected path.
+  if (!currentUser) {
+    return (
+      <div className="pb-6">
+        <AppHeader title="You" />
+        <EmptyState
+          icon={<UserRound className="size-6" />}
+          title="You're not signed in"
+          subtitle="Sign in to see your profile."
+          action={
+            <Link
+              href="/login"
+              className="flex min-h-11 items-center rounded-lg bg-brand px-4 text-sm font-medium text-white"
+            >
+              Go to sign in
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
 
   const listingCount = listings.filter((l) => l.sellerId === currentUser.id).length;
   const groupCount = getMyGroups().length;
