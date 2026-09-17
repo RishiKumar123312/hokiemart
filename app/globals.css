@@ -59,6 +59,36 @@
   --color-muted-text: var(--muted-text);
   --color-input-border: var(--input-border);
   --color-label: var(--label);
+
+  /* Added for messaging (/messages/*) only. Messaging deliberately looks and
+     reads differently from the rest of the app -- a warm paper background
+     and a serif typeface, like reading a letter rather than scanning a feed
+     -- so it gets its own small set of colour names instead of reusing the
+     ones above. Nothing outside components/messages/* and app/messages/*
+     ever uses these, so the rest of the app is unaffected by their existing.
+     "Label" here is deliberately a different name from --color-label above
+     (that one is form-field labels on the settings/sign-up screens; this one
+     is the small-caps metadata text in messaging) -- reusing the same name
+     for two different colours would have been exactly the kind of drift
+     this file is trying to avoid. */
+  --color-paper: var(--paper);
+  --color-rule: var(--rule);
+  --color-rule-soft: var(--rule-soft);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-message-label: var(--message-label);
+  --color-tile: var(--tile);
+
+  /* A serif font, for messaging only. This is a NEW token rather than a
+     change to --font-sans above -- because this file uses "@theme inline",
+     Tailwind bakes --font-sans's *value* into the font-sans utility at build
+     time rather than pointing at the variable, so redefining --font-sans
+     later on a wrapper element would silently do nothing. A separate token
+     avoids that trap entirely and guarantees this can never leak into the
+     rest of the app by accident. No new font file is loaded -- this is the
+     serif system-font stack Tailwind ships by default (Georgia and similar),
+     which is already available in every browser. */
+  --font-editorial: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
 :root {
@@ -100,6 +130,34 @@
   --muted-text: #999999;
   --input-border: #e3e3e3;
   --label: #555555;
+
+  /* Messaging tokens (/messages/* only) -- see the comment above where these
+     are mapped into Tailwind utilities for why this screen has its own
+     palette instead of reusing the app's usual one. */
+  --paper: #fffdfb;
+  --rule: #e8e3dd;
+  --rule-soft: #f0ebe5;
+  --ink: #1a1a1a;
+  --ink-muted: #9a948e;
+  --message-label: #a09a94;
+  --tile: #f5f1ec;
+}
+
+/* The small metadata text used throughout messaging -- a sender's name next
+   to a timestamp, a listing's category on a reference card, and so on.
+   Defined once, here, as a real Tailwind utility (the "@utility" form the
+   shadcn primitives already use elsewhere in this file's imports), because
+   this exact look shows up in a dozen different places in the messaging
+   screens, and if each one styled it by hand they would slowly drift out of
+   sync with each other. Always sans-serif, even inside the serif-styled
+   messaging screens, because dense uppercase text reads more clearly in a
+   plain typeface than a serif one at this small a size. */
+@utility label-caps {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--color-message-label);
 }
 
 @layer base {

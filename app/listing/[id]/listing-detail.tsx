@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { ArrowLeft, Heart, MapPin } from "lucide-react";
 import { AppHeader } from "@/components/nav/app-header";
 import { IconButton } from "@/components/ui/icon-button";
@@ -13,18 +12,12 @@ import { EmptyState } from "@/components/empty-state";
 import { formatPrice, timeAgo } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import type { Handoff } from "@/lib/mock-data";
-
-const HANDOFF_LABEL: Record<Handoff, string> = {
-  "Pickup only": "Pickup only",
-  Delivery: "Delivery available",
-  Both: "Pickup or delivery",
-};
+import { HANDOFF_LABEL } from "@/lib/mock-data";
 
 export function ListingDetail({ id }: { id: string }) {
   const router = useRouter();
-  const { getListing, getSeller, getGroup, isSaved, toggleSave } = useStore();
-  const [messaged, setMessaged] = useState(false);
+  const { getListing, getSeller, getGroup, isSaved, toggleSave, openConversationAbout } =
+    useStore();
 
   const listing = getListing(id);
 
@@ -114,16 +107,16 @@ export function ListingDetail({ id }: { id: string }) {
       >
         <button
           type="button"
-          disabled={messaged}
-          onClick={() => setMessaged(true)}
-          className={cn(
-            "h-12 flex-1 rounded-lg text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-            messaged
-              ? "bg-brand-tint text-brand-ink"
-              : "bg-brand text-white hover:bg-brand/90"
-          )}
+          onClick={() => {
+            // Opens (or starts) the conversation with this seller, making
+            // sure this listing's reference card is ready to show, then
+            // takes the person straight into that thread.
+            openConversationAbout(listing.sellerId, listing.id);
+            router.push(`/messages/${listing.sellerId}`);
+          }}
+          className="h-12 flex-1 rounded-lg bg-brand text-sm font-medium text-white outline-none transition-colors hover:bg-brand/90 focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          {messaged ? "Message sent · check your inbox" : "Message seller"}
+          Message seller
         </button>
         <IconButton
           aria-label={saved ? "Remove from saved" : "Save listing"}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, MessageCircle, PackageSearch, Plus, SlidersHorizontal } from "lucide-react";
+import { Bell, PackageSearch, Plus, SlidersHorizontal } from "lucide-react";
 import { AppHeader } from "@/components/nav/app-header";
 import { IconButton } from "@/components/ui/icon-button";
 import { SearchBar } from "@/components/feed/search-bar";
@@ -11,9 +11,11 @@ import { FilterSheet, DEFAULT_FILTERS, activeFilterCount, type Filters } from "@
 import { ListingGrid } from "@/components/listing/listing-grid";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { searchListings } from "@/lib/search";
 
 export default function FeedPage() {
-  const { getPublicListings, getMyGroups, getUnreadCount, hasLoadedOnce, markLoaded } = useStore();
+  const { getPublicListings, getMyGroups, getUnreadCount, hasLoadedOnce, markLoaded, unreadNotificationCount } =
+    useStore();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -28,12 +30,13 @@ export default function FeedPage() {
   const myGroups = getMyGroups();
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     const min = filters.minPrice.trim() === "" ? null : Number(filters.minPrice);
     const max = filters.maxPrice.trim() === "" ? null : Number(filters.maxPrice);
 
-    return listings.filter((l) => {
-      const matchesQuery = q === "" || l.title.toLowerCase().includes(q);
+    // The pill filters (category, pickup/delivery, price) narrow down the
+    // list first -- these don't care about "relevance," a listing either
+    // matches them or it doesn't.
+    const narrowed = listings.filter((l) => {
       const matchesCategory = filters.category === "All" || l.category === filters.category;
       // "Both" on either side is permissive: an unfiltered search shows
       // everything, and a listing offering both handoff methods satisfies
@@ -42,8 +45,13 @@ export default function FeedPage() {
         filters.handoff === "Both" || l.handoff === "Both" || l.handoff === filters.handoff;
       const matchesMin = min === null || Number.isNaN(min) || l.price >= min;
       const matchesMax = max === null || Number.isNaN(max) || l.price <= max;
-      return matchesQuery && matchesCategory && matchesHandoff && matchesMin && matchesMax;
+      return matchesCategory && matchesHandoff && matchesMin && matchesMax;
     });
+
+    // Then, only if someone actually typed something, the search box
+    // re-sorts and further trims that narrowed list by relevance. With
+    // nothing typed, the list stays in its normal newest-first order.
+    return search.trim() === "" ? narrowed : searchListings(narrowed, search);
   }, [listings, search, filters]);
 
   const filterCount = activeFilterCount(filters);
@@ -53,14 +61,17 @@ export default function FeedPage() {
       <AppHeader
         left={<span className="pl-2 font-medium text-brand">Maroon Market</span>}
         right={
-          <>
-            <IconButton aria-label="Notifications">
+          <Link href="/notifications">
+            <IconButton aria-label="Notifications" className="relative">
               <Bell className="size-[17px]" />
+              {unreadNotificationCount > 0 && (
+                <span
+                  aria-label="Unread notifications"
+                  className="absolute right-2 top-2 size-2 rounded-full bg-brand"
+                />
+              )}
             </IconButton>
-            <IconButton aria-label="Messages">
-              <MessageCircle className="size-[17px]" />
-            </IconButton>
-          </>
+          </Link>
         }
       />
 

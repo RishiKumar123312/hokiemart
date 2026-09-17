@@ -4,7 +4,11 @@
       "Bash(xargs -I{} sh -c 'echo {}; wc -l {}')",
       "Bash(grep -iE \"^badge-check|^sofa\\\\.mjs$\")",
       "Bash(grep -iE \"^lock\\\\.mjs$|^chevron-right\\\\.mjs$|^chevron-left\\\\.mjs$|^radio\\\\.mjs$|^circle-check|^upload\\\\.mjs$|^image\\\\.mjs$|^map-pin\\\\.mjs$|^clock\\\\.mjs$\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(curl -s \"http://localhost:3000/groups/g3\")",
+      "Bash(npx --yes tsx _test-group-search.mts)",
+      "Bash(rm -f _test-group-search.mts)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }; \"stopped\")"
     ]
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Star, ShieldCheck, Settings, UserRound } from "lucide-react";
+import { ChevronRight, Heart, Star, ShieldCheck, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 import { AppHeader } from "@/components/nav/app-header";
 import { Avatar } from "@/components/user/avatar";
@@ -8,11 +8,15 @@ import { VerifiedLine } from "@/components/user/verified-line";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 // The "href" on a row is where tapping it goes. Rows without one (Reviews,
 // Verification status) are out of scope for this app so far and stay
 // non-clickable placeholders.
 const SETTINGS_ROWS: { icon: typeof Star; label: string; href?: string }[] = [
+  // Saved moved here from the bottom nav -- it used to be its own tab, now
+  // it's a row here instead, right above Reviews.
+  { icon: Heart, label: "Saved items", href: "/saved" },
   { icon: Star, label: "Reviews" },
   { icon: ShieldCheck, label: "Verification status" },
   { icon: Settings, label: "Settings", href: "/settings" },
@@ -74,18 +78,35 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-3 gap-2 px-4">
         {[
-          { label: "Listings", value: listingCount },
-          { label: "Groups", value: groupCount },
-          { label: "Saved", value: savedCount },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="flex flex-col items-center gap-0.5 rounded-xl border border-hairline py-3.5"
-          >
-            <span className="font-medium text-foreground">{stat.value}</span>
-            <span className="text-xs text-stone">{stat.label}</span>
-          </div>
-        ))}
+          { label: "Listings", value: listingCount, href: undefined },
+          { label: "Groups", value: groupCount, href: undefined },
+          { label: "Saved", value: savedCount, href: "/saved" },
+        ].map((stat) => {
+          const tileClassName =
+            "flex flex-col items-center gap-0.5 rounded-xl border border-hairline py-3.5";
+          const tileContent = (
+            <>
+              <span className="font-medium text-foreground">{stat.value}</span>
+              <span className="text-xs text-stone">{stat.label}</span>
+            </>
+          );
+          // Only the Saved tile links anywhere -- Listings and Groups stay
+          // plain counts, since there's no single screen listing "all my
+          // listings" or "all my groups" the way /saved already exists.
+          return stat.href ? (
+            <Link
+              key={stat.label}
+              href={stat.href}
+              className={cn(tileClassName, "cursor-pointer outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50")}
+            >
+              {tileContent}
+            </Link>
+          ) : (
+            <div key={stat.label} className={tileClassName}>
+              {tileContent}
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-5 divide-y divide-hairline border-y border-hairline">

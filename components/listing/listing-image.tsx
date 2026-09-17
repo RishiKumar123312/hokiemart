@@ -2,7 +2,10 @@ import { Sofa, Ticket, BookOpen, Shirt, Package, type LucideIcon } from "lucide-
 import type { Category } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-const CATEGORY_ICON: Record<Category, LucideIcon> = {
+// Exported so other components needing a category-icon lookup (the
+// messaging reference card thumbnail, for one) reuse this exact mapping
+// instead of keeping a second copy that could fall out of sync with it.
+export const CATEGORY_ICON: Record<Category, LucideIcon> = {
   Furniture: Sofa,
   Tickets: Ticket,
   Textbooks: BookOpen,

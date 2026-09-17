@@ -2,20 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Plus, Heart, User } from "lucide-react";
+import { Home, MessageCircle, Plus, LayoutGrid, User } from "lucide-react";
+import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/", label: "Home", icon: Home, match: (p: string) => p === "/" },
+  {
+    href: "/messages",
+    label: "Messages",
+    icon: MessageCircle,
+    match: (p: string) => p.startsWith("/messages"),
+  },
+  { href: "/sell", label: "Post", icon: Plus, match: (p: string) => p === "/sell" },
   {
     href: "/groups",
     label: "Groups",
     icon: LayoutGrid,
     match: (p: string) => p.startsWith("/groups") && p !== "/groups/new" && !p.endsWith("/invite"),
   },
-  { href: "/sell", label: "Sell", icon: Plus, match: (p: string) => p === "/sell" },
-  { href: "/saved", label: "Saved", icon: Heart, match: (p: string) => p === "/saved" },
-  { href: "/profile", label: "You", icon: User, match: (p: string) => p === "/profile" },
+  { href: "/profile", label: "Profile", icon: User, match: (p: string) => p === "/profile" },
 ] as const;
 
 // Hidden on task-flow screens that own the thumb zone with their own
@@ -29,11 +35,16 @@ function isHidden(pathname: string): boolean {
   // the whole time someone is in either of them.
   if (pathname.startsWith("/auth")) return true;
   if (pathname.startsWith("/settings")) return true;
+  // The inbox (/messages) is a tab destination and keeps the bar, but a
+  // specific conversation (/messages/someone) hides it -- same reasoning as
+  // listing detail above: the message composer needs the thumb zone.
+  if (pathname.startsWith("/messages/")) return true;
   return false;
 }
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { totalUnreadCount } = useStore();
   if (isHidden(pathname)) return null;
 
   return (
@@ -44,19 +55,32 @@ export function BottomNav() {
       {TABS.map(({ href, label, icon: Icon, match }) => {
         const active = match(pathname);
         const isSell = href === "/sell";
+        const isMessages = href === "/messages";
         return (
           <Link
             key={href}
             href={href}
             className="flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 outline-none"
           >
-            <Icon
-              className={cn(
-                isSell ? "size-6" : "size-[19px]",
-                active ? "text-brand" : "text-stone"
+            <span className="relative flex items-center justify-center">
+              <Icon
+                className={cn(
+                  isSell ? "size-6" : "size-[19px]",
+                  active ? "text-brand" : "text-stone"
+                )}
+                strokeWidth={isSell ? 2.25 : 2}
+              />
+              {/* A small dot rather than a number -- matches the unread dot
+                  used on inbox rows, so "something's unread" looks the same
+                  everywhere in the app rather than two different styles of
+                  badge. */}
+              {isMessages && totalUnreadCount > 0 && (
+                <span
+                  aria-label="Unread messages"
+                  className="absolute -right-1 -top-1 size-2 rounded-full bg-brand"
+                />
               )}
-              strokeWidth={isSell ? 2.25 : 2}
-            />
+            </span>
             <span
               className={cn(
                 "text-[11px]",

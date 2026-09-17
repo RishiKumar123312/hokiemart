@@ -23,13 +23,17 @@ import { createClient } from "@/lib/supabase";
 import { initialsFromName } from "@/lib/format";
 import {
   buildSeedListings,
+  buildSeedConversations,
   seedGroups,
   seedUsers,
   CURRENT_USER_ID,
   type Category,
+  type Conversation,
   type Group,
   type Handoff,
   type Listing,
+  type Message,
+  type Notification,
   type User,
 } from "@/lib/mock-data";
 
@@ -109,6 +113,31 @@ type StoreState = {
   getUnreadCount: (groupId: string) => number;
   savedCount: number;
 
+  // messaging reads
+  // Every conversation the signed-in person is part of, newest activity
+  // first (whichever conversation has the most recent message sorts to the
+  // top -- same idea as the feed always showing newest listings first).
+  getConversations: () => Conversation[];
+  getConversation: (otherUserId: string) => Conversation | undefined;
+  // Looks up any user by id -- named separately from getSeller even though
+  // it does the same lookup, because "who is this listing's seller" and
+  // "who am I talking to" are different questions that happen to share an
+  // implementation.
+  getOtherUser: (id: string) => User | undefined;
+  // How many messages are unread across every conversation, added together
+  // -- what the inbox header sentence and the little dots on the Messages
+  // tab and the feed's message icon all read from.
+  totalUnreadCount: number;
+
+  // notification reads
+  // Every notification, newest first.
+  getNotifications: () => Notification[];
+  isCategoryFollowed: (category: Category) => boolean;
+  isGroupNotifyOn: (groupId: string) => boolean;
+  // How many notifications haven't been opened yet -- feeds the bell icon's
+  // dot and the notifications screen's own heading sentence.
+  unreadNotificationCount: number;
+
   // mutations
   addListing: (draft: NewListingDraft) => Listing;
   toggleSave: (listingId: string) => void;
@@ -126,6 +155,34 @@ type StoreState = {
   // every "edit" screen in account settings (name, username, the privacy
   // pills, and so on) so there is a single place that does this update.
   updateProfile: (patch: Partial<User>) => void;
+
+  // messaging mutations
+  // Adds a message to the conversation with this person (creating the
+  // conversation first if it doesn't exist yet), sent from the signed-in
+  // person. Blank messages are silently ignored.
+  sendMessage: (otherUserId: string, body: string) => void;
+  // Clears the unread count on a conversation. Called the moment its thread
+  // screen opens.
+  markConversationRead: (otherUserId: string) => void;
+  // What "Message seller" on a listing actually does: opens (or starts) the
+  // conversation with that seller, and makes sure a reference card for this
+  // listing will show up -- but only if the conversation isn't already on
+  // this exact listing, so tapping the button twice in a row doesn't insert
+  // two identical cards.
+  openConversationAbout: (sellerId: string, listingId: string) => void;
+
+  // notification mutations
+  // Turns following a category on or off. A followed category creates a
+  // notification the next time any new listing lands in it.
+  toggleCategoryFollow: (category: Category) => void;
+  // Turns notifications for a specific group's new listings on or off --
+  // separate from being a member, so joining a group doesn't automatically
+  // sign you up for its notifications.
+  toggleGroupNotify: (groupId: string) => void;
+  // Marks every notification as read. Called the moment the notifications
+  // screen opens, the same way a message thread clears its own unread
+  // count on open.
+  markNotificationsRead: () => void;
 };
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -143,6 +200,62 @@ function makeInviteCode(name: string): string {
   return `${letters}${suffix}`;
 }
 
+// Works out what a conversation is "currently about," by looking at the most
+// recent message that mentioned a listing (or, if nobody has said anything
+// yet, whatever listing the conversation was opened about). Used to decide
+// whether "Message seller" needs to insert a new reference card or whether
+// the conversation is already on that subject.
+function currentSubjectOf(conversation: Conversation): string | null {
+  for (let i = conversation.messages.length - 1; i >= 0; i--) {
+    const listingId = conversation.messages[i].listingId;
+    if (listingId) return listingId;
+  }
+  return conversation.pendingListingId;
+}
+
+// Works out which notifications (zero, one, or both) a brand-new listing
+// should trigger: one if its category is followed, another if it landed in
+// a group whose notifications are turned on. There's only one real account
+// in this prototype, so this checks the current person's own follows/group
+// settings -- posting something that matches your own subscription is how
+// you see the feature actually work, standing in for "someone else who
+// follows this would get notified."
+function notificationsForNewListing(
+  listing: Listing,
+  followedCategories: Set<Category>,
+  groupNotifyIds: Set<string>,
+  groups: Group[]
+): Notification[] {
+  const created: Notification[] = [];
+
+  if (followedCategories.has(listing.category)) {
+    created.push({
+      id: makeId("n"),
+      kind: "category",
+      sourceId: listing.category,
+      sourceLabel: listing.category,
+      listingId: listing.id,
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
+  }
+
+  if (listing.groupId && groupNotifyIds.has(listing.groupId)) {
+    const group = groups.find((g) => g.id === listing.groupId);
+    created.push({
+      id: makeId("n"),
+      kind: "group",
+      sourceId: listing.groupId,
+      sourceLabel: group?.name ?? "your group",
+      listingId: listing.id,
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
+  }
+
+  return created;
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [listings, setListings] = useState<Listing[]>(() =>
     USE_MOCK_DATA ? buildSeedListings() : []
@@ -154,6 +267,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
   const [requestedIds, setRequestedIds] = useState<Set<string>>(() => new Set());
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>(() =>
+    USE_MOCK_DATA ? buildSeedConversations() : []
+  );
+
+  // Notifications start completely empty and opt-in, on purpose -- nobody
+  // follows a category or has a group's notifications turned on until they
+  // actually flip one of those switches themselves. See addListing below
+  // for where a notification actually gets created.
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [followedCategories, setFollowedCategories] = useState<Set<Category>>(() => new Set());
+  const [groupNotifyIds, setGroupNotifyIds] = useState<Set<string>>(() => new Set());
 
   const [currentUser, setCurrentUser] = useState<User | null>(() =>
     USE_MOCK_DATA ? seedUsers.find((u) => u.id === CURRENT_USER_ID)! : null
@@ -238,6 +362,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [listings]
   );
 
+  const getConversations = useCallback(() => {
+    // Sort by whichever conversation's most recent message is newest --
+    // same "newest activity first" idea used for the listings feed, just
+    // keyed off the last message instead of when the item was created.
+    return [...conversations].sort((a, b) => {
+      const aLast = a.messages[a.messages.length - 1]?.sentAt;
+      const bLast = b.messages[b.messages.length - 1]?.sentAt;
+      const aTime = aLast ? new Date(aLast).getTime() : 0;
+      const bTime = bLast ? new Date(bLast).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [conversations]);
+
+  const getConversation = useCallback(
+    (otherUserId: string) => conversations.find((c) => c.otherUserId === otherUserId),
+    [conversations]
+  );
+
+  // Same underlying lookup as getSeller -- kept as a separate name because,
+  // from a messaging screen, "who is this person" reads more clearly than
+  // "who is this listing's seller."
+  const getOtherUser = useCallback((id: string) => getSeller(id), [getSeller]);
+
+  const getNotifications = useCallback(
+    () => [...notifications].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [notifications]
+  );
+
+  const isCategoryFollowed = useCallback(
+    (category: Category) => followedCategories.has(category),
+    [followedCategories]
+  );
+
+  const isGroupNotifyOn = useCallback(
+    (groupId: string) => groupNotifyIds.has(groupId),
+    [groupNotifyIds]
+  );
+
   const addListing = useCallback(
     (draft: NewListingDraft): Listing => {
       const listing: Listing = {
@@ -254,9 +416,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         handoff: draft.handoff,
       };
       setListings((prev) => [listing, ...prev]);
+
+      const created = notificationsForNewListing(listing, followedCategories, groupNotifyIds, groups);
+      if (created.length > 0) setNotifications((prev) => [...created, ...prev]);
+
       return listing;
     },
-    [currentUser]
+    [currentUser, followedCategories, groupNotifyIds, groups]
   );
 
   const toggleSave = useCallback((listingId: string) => {
@@ -369,7 +535,108 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);
 
+  const sendMessage = useCallback(
+    (otherUserId: string, body: string) => {
+      const trimmed = body.trim();
+      if (!trimmed) return; // Nothing to send -- the composer should never call this with empty text anyway.
+
+      setConversations((prev) => {
+        const existing = prev.find((c) => c.otherUserId === otherUserId);
+        const base: Conversation =
+          existing ?? {
+            id: makeId("c"),
+            otherUserId,
+            messages: [],
+            unreadCount: 0,
+            pendingListingId: null,
+          };
+
+        const message: Message = {
+          id: makeId("m"),
+          conversationId: base.id,
+          senderId: currentUser?.id ?? CURRENT_USER_ID,
+          body: trimmed,
+          sentAt: new Date().toISOString(),
+          // If this conversation was just opened from a listing's "Message
+          // seller" button, that listing is waiting right here -- this new
+          // message is the first thing said, so it's what the reference
+          // card attaches to.
+          listingId: base.pendingListingId,
+        };
+
+        const updated: Conversation = {
+          ...base,
+          messages: [...base.messages, message],
+          pendingListingId: null,
+        };
+
+        if (existing) return prev.map((c) => (c.id === existing.id ? updated : c));
+        return [updated, ...prev];
+      });
+    },
+    [currentUser]
+  );
+
+  const markConversationRead = useCallback((otherUserId: string) => {
+    setConversations((prev) =>
+      prev.map((c) => (c.otherUserId === otherUserId ? { ...c, unreadCount: 0 } : c))
+    );
+  }, []);
+
+  const openConversationAbout = useCallback((sellerId: string, listingId: string) => {
+    setConversations((prev) => {
+      const existing = prev.find((c) => c.otherUserId === sellerId);
+
+      if (!existing) {
+        const conversation: Conversation = {
+          id: makeId("c"),
+          otherUserId: sellerId,
+          messages: [],
+          unreadCount: 0,
+          // Nothing has been said yet, so there's no message for the
+          // reference card to attach to -- it waits here until the first
+          // message is actually sent.
+          pendingListingId: listingId,
+        };
+        return [conversation, ...prev];
+      }
+
+      // Already mid-conversation about this exact listing -- leave it
+      // alone rather than queuing up a second, identical card.
+      if (currentSubjectOf(existing) === listingId) return prev;
+
+      return prev.map((c) => (c.id === existing.id ? { ...c, pendingListingId: listingId } : c));
+    });
+  }, []);
+
+  const toggleCategoryFollow = useCallback((category: Category) => {
+    setFollowedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  }, []);
+
+  const toggleGroupNotify = useCallback((groupId: string) => {
+    setGroupNotifyIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  }, []);
+
+  const markNotificationsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => (n.read ? n : { ...n, read: true })));
+  }, []);
+
   const savedCount = savedIds.size;
+  // Added together across every conversation, so one number can feed the
+  // inbox heading, the Messages tab dot, and the feed header dot without
+  // any of them being able to disagree with the others.
+  const totalUnreadCount = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+  const unreadNotificationCount = notifications.filter((n) => !n.read).length;
 
   const value = useMemo<StoreState>(
     () => ({
@@ -392,6 +659,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       isSaved,
       getUnreadCount,
       savedCount,
+      getConversations,
+      getConversation,
+      getOtherUser,
+      totalUnreadCount,
+      getNotifications,
+      isCategoryFollowed,
+      isGroupNotifyOn,
+      unreadNotificationCount,
       addListing,
       toggleSave,
       joinGroup,
@@ -402,6 +677,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       createGroup,
       applySignup,
       updateProfile,
+      sendMessage,
+      markConversationRead,
+      openConversationAbout,
+      toggleCategoryFollow,
+      toggleGroupNotify,
+      markNotificationsRead,
     }),
     [
       listings,
@@ -423,6 +704,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       isSaved,
       getUnreadCount,
       savedCount,
+      getConversations,
+      getConversation,
+      getOtherUser,
+      totalUnreadCount,
+      getNotifications,
+      isCategoryFollowed,
+      isGroupNotifyOn,
+      unreadNotificationCount,
       addListing,
       toggleSave,
       joinGroup,
@@ -433,6 +722,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       createGroup,
       applySignup,
       updateProfile,
+      sendMessage,
+      markConversationRead,
+      openConversationAbout,
+      toggleCategoryFollow,
+      toggleGroupNotify,
+      markNotificationsRead,
     ]
   );
 
