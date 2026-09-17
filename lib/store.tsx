@@ -20,6 +20,7 @@ import {
 } from "react";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
+import { initialsFromName } from "@/lib/format";
 import {
   buildSeedListings,
   seedGroups,
@@ -70,6 +71,17 @@ type NewGroupDraft = {
 
 type RedeemResult = { success: true; groupId: string } | { success: false; error: string };
 
+// What the finished sign-up flow hands off to the store. Field names match
+// SignupDraft in lib/signup-context.tsx.
+type SignupHandoff = {
+  email: string;
+  fullName: string;
+  username: string;
+  phone: string;
+  phoneHidden: boolean;
+  emailHidden: boolean;
+};
+
 type StoreState = {
   listings: Listing[];
   groups: Group[];
@@ -106,6 +118,14 @@ type StoreState = {
   cancelRequest: (groupId: string) => void;
   redeemInviteCode: (code: string) => RedeemResult;
   createGroup: (draft: NewGroupDraft) => Group;
+  // Takes everything gathered during sign-up and makes it the signed-in
+  // person's profile. Only actually changes anything while running on
+  // pretend data -- see the comment on the function itself for why.
+  applySignup: (handoff: SignupHandoff) => void;
+  // Changes one or more fields on the signed-in person's profile -- used by
+  // every "edit" screen in account settings (name, username, the privacy
+  // pills, and so on) so there is a single place that does this update.
+  updateProfile: (patch: Partial<User>) => void;
 };
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -325,6 +345,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return group;
   }, []);
 
+  const applySignup = useCallback((handoff: SignupHandoff) => {
+    // In real mode, Supabase is the source of truth for who is signed in --
+    // overwriting currentUser here would fight the real session, so this
+    // deliberately does nothing outside of demo mode.
+    if (!USE_MOCK_DATA) return;
+    setCurrentUser((prev) => ({
+      // Keep the existing id, verified flag and sales count -- sign-up
+      // shouldn't reset someone's history, just fill in who they are.
+      ...(prev ?? { id: CURRENT_USER_ID, verified: true, salesCount: 0 }),
+      displayName: handoff.fullName,
+      initials: initialsFromName(handoff.fullName),
+      email: handoff.email,
+      username: handoff.username,
+      phone: handoff.phone,
+      phoneHidden: handoff.phoneHidden,
+      emailHidden: handoff.emailHidden,
+      hasPassword: true,
+    }));
+  }, []);
+
+  const updateProfile = useCallback((patch: Partial<User>) => {
+    setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
   const savedCount = savedIds.size;
 
   const value = useMemo<StoreState>(
@@ -356,6 +400,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cancelRequest,
       redeemInviteCode,
       createGroup,
+      applySignup,
+      updateProfile,
     }),
     [
       listings,
@@ -385,6 +431,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cancelRequest,
       redeemInviteCode,
       createGroup,
+      applySignup,
+      updateProfile,
     ]
   );
 

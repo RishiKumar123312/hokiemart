@@ -24,6 +24,11 @@ function isHidden(pathname: string): boolean {
   if (pathname.startsWith("/listing/")) return true;
   if (pathname === "/groups/new") return true;
   if (pathname.endsWith("/invite")) return true;
+  // Sign-in/sign-up and account settings are their own full-screen flows,
+  // not part of the five-tab browsing experience, so the tab bar stays off
+  // the whole time someone is in either of them.
+  if (pathname.startsWith("/auth")) return true;
+  if (pathname.startsWith("/settings")) return true;
   return false;
 }
 

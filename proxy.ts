@@ -3,7 +3,21 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = new Set(["/login"]);
 
+// Demo mode: when the app is running on pretend data there is no real account
+// to check, so this guard steps aside and lets every page through. That is what
+// makes the clickable prototype (including the mock sign-in screens under
+// /auth) viewable without a real Supabase login.
+//
+// Note the deliberately strict comparison: protection only switches off when
+// this setting is exactly the word "true". Any other value -- including the
+// setting being missing entirely, as it would be on a fresh deployment where
+// someone forgot to add it -- leaves the real protection switched ON. Getting
+// this backwards would silently expose every page, so it fails safe.
+const DEMO_MODE = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+
 export async function proxy(request: NextRequest) {
+  if (DEMO_MODE) return NextResponse.next({ request });
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

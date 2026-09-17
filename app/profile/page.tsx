@@ -9,10 +9,13 @@ import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStore } from "@/lib/store";
 
-const SETTINGS_ROWS = [
+// The "href" on a row is where tapping it goes. Rows without one (Reviews,
+// Verification status) are out of scope for this app so far and stay
+// non-clickable placeholders.
+const SETTINGS_ROWS: { icon: typeof Star; label: string; href?: string }[] = [
   { icon: Star, label: "Reviews" },
   { icon: ShieldCheck, label: "Verification status" },
-  { icon: Settings, label: "Settings" },
+  { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 export default function ProfilePage() {
@@ -86,13 +89,30 @@ export default function ProfilePage() {
       </div>
 
       <div className="mt-5 divide-y divide-hairline border-y border-hairline">
-        {SETTINGS_ROWS.map(({ icon: Icon, label }) => (
-          <div key={label} className="flex min-h-11 items-center gap-3 px-4 py-3">
-            <Icon className="size-4 text-stone" />
-            <span className="flex-1 text-sm text-foreground">{label}</span>
-            <ChevronRight className="size-4 text-stone" />
-          </div>
-        ))}
+        {SETTINGS_ROWS.map(({ icon: Icon, label, href }) => {
+          const content = (
+            <>
+              <Icon className="size-4 text-stone" />
+              <span className="flex-1 text-sm text-foreground">{label}</span>
+              <ChevronRight className="size-4 text-stone" />
+            </>
+          );
+          // Rows with a destination are real links; the others render the
+          // exact same look as a plain (non-clickable) row.
+          return href ? (
+            <Link
+              key={label}
+              href={href}
+              className="flex min-h-11 cursor-pointer items-center gap-3 px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {content}
+            </Link>
+          ) : (
+            <div key={label} className="flex min-h-11 items-center gap-3 px-4 py-3">
+              {content}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

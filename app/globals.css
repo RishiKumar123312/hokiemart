@@ -50,6 +50,15 @@
   --color-group-ink: var(--group-ink);
   --color-stone: var(--stone);
   --color-hairline: var(--hairline);
+
+  /* Added for the sign-in, sign-up and settings screens. These are new names
+     rather than changes to the ones above, so no screen that already exists
+     shifts colour by a single pixel. */
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-muted-text: var(--muted-text);
+  --color-input-border: var(--input-border);
+  --color-label: var(--label);
 }
 
 :root {
@@ -84,6 +93,13 @@
   --group-ink: #8a420c;
   --stone: #75787b;
   --hairline: rgba(0, 0, 0, 0.08);
+
+  /* Sign-in / sign-up / settings tokens */
+  --success: #1d6e4f;
+  --danger: #c0392b;
+  --muted-text: #999999;
+  --input-border: #e3e3e3;
+  --label: #555555;
 }
 
 @layer base {

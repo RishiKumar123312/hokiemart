@@ -57,6 +57,16 @@ export type User = {
   initials: string;
   verified: boolean;
   salesCount: number;
+  // Everything below is optional. It's new -- added for sign-up and account
+  // settings -- and the teammate's real-Supabase-user code path doesn't set
+  // any of it yet, so making these required would break that code. A screen
+  // that reads one of these should treat "not present" the same as "empty".
+  email?: string; // The verified @vt.edu address.
+  username?: string;
+  phone?: string;
+  phoneHidden?: boolean; // true = only the user themself can see their phone number.
+  emailHidden?: boolean; // true = other students can't see the actual email address.
+  hasPassword?: boolean; // Whether password sign-in is turned on for this account.
 };
 
 // ---------------------------------------------------------------------------
@@ -66,7 +76,19 @@ export type User = {
 export const CURRENT_USER_ID = "u1";
 
 export const seedUsers: User[] = [
-  { id: "u1", displayName: "Maya Patel", initials: "MP", verified: true, salesCount: 6 },
+  {
+    id: "u1",
+    displayName: "Maya Patel",
+    initials: "MP",
+    verified: true,
+    salesCount: 6,
+    email: "mpatel28@vt.edu",
+    username: "maya_p28",
+    phone: "(540) 555-0142",
+    phoneHidden: true,
+    emailHidden: true,
+    hasPassword: true,
+  },
   { id: "u2", displayName: "Jordan Webb", initials: "JW", verified: true, salesCount: 14 },
   { id: "u3", displayName: "Caleb Nguyen", initials: "CN", verified: true, salesCount: 2 },
   { id: "u4", displayName: "Ava Thompson", initials: "AT", verified: true, salesCount: 9 },
